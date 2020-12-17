@@ -3,9 +3,16 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmElectronData.hh"
 
+// don't worry it's just for testing
+#define private public
+#include "G4HepEmElectronManager.hh"
+
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+// Pull in implementation
+#include "G4HepEmElectronManager.icc"
+#include "G4HepEmRunUtils.icc"
 
 // Kernel to evaluate the `Restricted Range` and restricted dE/dx values for the 
 // test cases. The required data are stored in the EnergyLoss data part of the 
@@ -98,12 +105,24 @@ void TestElossDataInvRangeKernel ( struct G4HepEmElectronDataOnDevice* theElectr
   }
 }  
 
+__global__
+void TestEloss ( struct G4HepEmElectronData* theElectronData,
+     int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d,
+     double* tsOutResRange_d, double* tsOutResDEDX_d, double* tsOutResInvRange_d,
+     int numTestCases ) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+    G4HepEmElectronManager theElectronMgr;
+    tsOutResRange_d[i]    = theElectronMgr.GetRestRange(theElectronData, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
+    tsOutResDEDX_d[i]     = theElectronMgr.GetRestDEDX (theElectronData, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i]);
+    tsOutResInvRange_d[i] = theElectronMgr.GetInvRange (theElectronData, tsInImc_d[i], tsOutResRange_d[i]);
+  }
+}
 
 
 void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData, 
      int* tsInImc_h, double* tsInEkin_h, double* tsInLogEkin_h,
      double* tsOutResRange_h, double* tsOutResDEDX_h, double* tsOutResInvRange_h, 
-     int numTestCases, bool iselectron ) {
+     int numTestCases, bool iselectron, bool hostLayout ) {
   //                                   
   // --- Allocate device side memory for the input/output data and copy all input
   //     data from host to device
@@ -130,12 +149,18 @@ void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData,
   int numThreads = 512;
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
 //  std::cout << " N = " << numTestCases << " numBlocks = " << numBlocks << " numThreads = " << numThreads << " x = " << numBlocks*numThreads << std::endl;
-  struct G4HepEmElectronDataOnDevice* elData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
-  TestElossDataRangeDEDXKernel <  true > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases );
-  TestElossDataRangeDEDXKernel < false > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases );
-  // range data need to be ready before calling the inverse range kernel ==> sync here
-  cudaDeviceSynchronize();
-  TestElossDataInvRangeKernel  <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsOutResRange_d, tsOutResInvRange_d,  numTestCases );
+
+  if (hostLayout) {
+    struct G4HepEmElectronData* elData = iselectron ? hepEmData->fTheElectronData_gpu_hl : hepEmData->fThePositronData_gpu_hl;
+    TestEloss  <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, tsOutResDEDX_d, tsOutResInvRange_d, numTestCases );
+  } else {
+    struct G4HepEmElectronDataOnDevice* elData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
+    TestElossDataRangeDEDXKernel <  true > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResRange_d, numTestCases );
+    TestElossDataRangeDEDXKernel < false > <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsOutResDEDX_d,  numTestCases );
+    // range data need to be ready before calling the inverse range kernel ==> sync here
+    cudaDeviceSynchronize();
+    TestElossDataInvRangeKernel  <<< numBlocks, numThreads >>> (elData, tsInImc_d, tsOutResRange_d, tsOutResInvRange_d,  numTestCases );
+  }
   //  
   // --- Synchronize to make sure that completed on the device
   cudaDeviceSynchronize();

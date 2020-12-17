@@ -2,6 +2,8 @@
 #ifndef G4HepEmElectronManager_HH
 #define G4HepEmElectronManager_HH
 
+#include "G4HepEmMacros.hh"
+
 struct G4HepEmData;
 struct G4HepEmParameters;
 struct G4HepEmElectronData;
@@ -95,10 +97,13 @@ private:
     * @return `Restricted range` value, interpolated at the given e-/e+ kinetic energy in the given material-cuts based on 
     *   the corresponding (discrete) `Energy Loss` data provded as input.
     */    
+  G4HepEmHostDevice
   double  GetRestRange(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
 
+  G4HepEmHostDevice
   double  GetRestDEDX(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
 
+  G4HepEmHostDevice
   double  GetInvRange(const struct G4HepEmElectronData* elData, int imc, double range);
 
   /*

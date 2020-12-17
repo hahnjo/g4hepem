@@ -171,11 +171,22 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   double* tsOutResOnDeviceRange    = new double[numTestCases]; 
   double* tsOutResOnDeviceDEDX     = new double[numTestCases]; 
   double* tsOutResOnDeviceInvRange = new double[numTestCases]; 
-  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRange, tsOutResOnDeviceDEDX, tsOutResOnDeviceInvRange, numTestCases, iselectron);
+  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRange, tsOutResOnDeviceDEDX, tsOutResOnDeviceInvRange, numTestCases, iselectron, false);
+
+  double* tsOutResOnDeviceRangeHL    = new double[numTestCases]; 
+  double* tsOutResOnDeviceDEDXHL     = new double[numTestCases]; 
+  double* tsOutResOnDeviceInvRangeHL = new double[numTestCases]; 
+  TestElossDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsOutResOnDeviceRangeHL, tsOutResOnDeviceDEDXHL, tsOutResOnDeviceInvRangeHL, numTestCases, iselectron, true);
+
   for (int i=0; i<numTestCases; ++i) { 
     if ( std::abs( 1.0 - tsOutResRange[i]/tsOutResOnDeviceRange[i] ) > 1.0E-14 ) {
       isPassed = false;
       std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device RANGE mismatch: " << tsOutResRange[i] << " != " << tsOutResOnDeviceRange[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
+      break;
+    }
+    if ( std::abs( 1.0 - tsOutResRange[i]/tsOutResOnDeviceRangeHL[i] ) > 1.0E-14 ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device (HL) RANGE mismatch: " << tsOutResRange[i] << " != " << tsOutResOnDeviceRangeHL[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
       break;
     }
     if ( std::abs( 1.0 - tsOutResDEDX[i]/tsOutResOnDeviceDEDX[i] ) > 1.0E-14 ) {
@@ -183,9 +194,19 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
       std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device dE/dx mismatch: "  << tsOutResDEDX[i] << " != " << tsOutResOnDeviceDEDX[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
       break;
     }
+    if ( std::abs( 1.0 - tsOutResDEDX[i]/tsOutResOnDeviceDEDXHL[i] ) > 1.0E-14 ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device (HL) dE/dx mismatch: "  << tsOutResDEDX[i] << " != " << tsOutResOnDeviceDEDXHL[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << ") " << std::endl; 
+      break;
+    }
     if ( std::abs( 1.0 - tsOutResInvRange[i]/tsOutResOnDeviceInvRange[i] ) > 1.0E-14 ) {
       isPassed = false;
       std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device Inverse-RANGE mismatch: "  << tsOutResInvRange[i] << " != " << tsOutResOnDeviceInvRange[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << " range =  " << tsOutResRange[i]<< ") " << std::endl; 
+      break;
+    }
+    if ( std::abs( 1.0 - tsOutResInvRange[i]/tsOutResOnDeviceInvRangeHL[i] ) > 1.0E-14 ) {
+      isPassed = false;
+      std::cerr << "\n*** ERROR:\nEnergyLoss data: G4HepEm Host vs Device (HL) Inverse-RANGE mismatch: "  << tsOutResInvRange[i] << " != " << tsOutResOnDeviceInvRangeHL[i] << " ( i = " << i << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << " range =  " << tsOutResRange[i]<< ") " << std::endl; 
       break;
     }
   }
@@ -193,6 +214,9 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron ) {
   delete [] tsOutResOnDeviceRange;
   delete [] tsOutResOnDeviceDEDX;
   delete [] tsOutResOnDeviceInvRange;  
+  delete [] tsOutResOnDeviceRangeHL;
+  delete [] tsOutResOnDeviceDEDXHL;
+  delete [] tsOutResOnDeviceInvRangeHL;  
 #endif // G4HepEm_CUDA_BUILD  
 
 

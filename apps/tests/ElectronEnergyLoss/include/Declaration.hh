@@ -48,8 +48,7 @@ bool TestElossData ( const struct G4HepEmData* hepEmData, bool iselectron=true )
   void TestElossDataOnDevice ( const struct G4HepEmData* hepEmData, 
                                int* tsInImc_h, double* tsInEkin_h, double* tsInLogEkin_h,
                                double* tsOutResRange_h, double* tsOutResDEDX_h, double* tsOutResInvRange_h,  
-                               int numTestCases, bool iselectron );
-
+                               int numTestCases, bool iselectron, bool hostLayout );
 
 
 
