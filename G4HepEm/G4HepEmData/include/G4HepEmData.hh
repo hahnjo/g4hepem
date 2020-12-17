@@ -64,6 +64,9 @@ struct G4HepEmData {
   struct G4HepEmMaterialData*          fTheMaterialData_gpu = nullptr;  
   struct G4HepEmElementData*           fTheElementData_gpu  = nullptr;
 
+  struct G4HepEmElectronData*          fTheElectronData_gpu_hl = nullptr;  
+  struct G4HepEmElectronData*          fThePositronData_gpu_hl = nullptr;
+
   struct G4HepEmElectronDataOnDevice*  fTheElectronData_gpu = nullptr;
   struct G4HepEmElectronDataOnDevice*  fThePositronData_gpu = nullptr;
 #endif  // G4HepEm_CUDA_BUILD

@@ -547,6 +547,7 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData);
     *   that stores the copied G4HepEmElectronDataOnDevice structure.
     */  
   void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEmElectronDataOnDevice** onDEVICE);
+  void CopyElectronDataToDeviceHL(struct G4HepEmElectronData* onHOST, struct G4HepEmElectronData** onDEVICE);
 
   /**
     * Frees all memory related to the device side G4HepEmElectronDataOnDevice structure referred 
@@ -556,6 +557,7 @@ void FreeElectronData (struct G4HepEmElectronData** theElectronData);
     *   The correspondig device memory will be freed and the input argument address will be set to null.
     */
   void FreeElectronDataOnDevice(struct G4HepEmElectronDataOnDevice** onDEVICE);
+  void FreeElectronDataOnDeviceHL(struct G4HepEmElectronData** onDEVICE);
 #endif // DG4HepEm_CUDA_BUILD
 
 

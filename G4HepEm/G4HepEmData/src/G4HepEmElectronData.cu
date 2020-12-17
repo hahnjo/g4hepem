@@ -315,6 +315,65 @@ void CopyElectronDataToDevice(struct G4HepEmElectronData* onHOST, struct G4HepEm
   delete elDataHTo_d;  
 }
 
+void CopyElectronDataToDeviceHL(struct G4HepEmElectronData* onHOST, struct G4HepEmElectronData** onDEVICE) {
+  if ( !onHOST ) return;
+  // clean away previous (if any)
+  if ( *onDEVICE ) {
+    FreeElectronDataOnDeviceHL ( onDEVICE );
+  }
+  // Create a G4HepEmElectronDataOnDevice structure to store pointers to _d 
+  // side arrays on the _h side.
+  struct G4HepEmElectronData* elDataHTo_d = new G4HepEmElectronData;
+
+  int numHepEmMCCData = onHOST->fNumMatCuts;
+  elDataHTo_d->fNumMatCuts = numHepEmMCCData;
+
+  const int numELoss = onHOST->fELossEnergyGridSize;
+  elDataHTo_d->fELossEnergyGridSize = numELoss;
+  elDataHTo_d->fELossLogMinEkin = onHOST->fELossLogMinEkin;
+  elDataHTo_d->fELossEILDelta = onHOST->fELossEILDelta;
+
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fELossEnergyGrid),  sizeof( double ) * numELoss ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fELossData),  sizeof( double ) * 5*numELoss*numHepEmMCCData ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fELossEnergyGrid, onHOST->fELossEnergyGrid, sizeof( double ) * numELoss, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fELossData, onHOST->fELossData, sizeof( double ) * 5*numELoss*numHepEmMCCData, cudaMemcpyHostToDevice ) );
+
+  const int numResMacXSec = onHOST->fResMacXSecNumData;
+  elDataHTo_d->fResMacXSecNumData = numResMacXSec;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fResMacXSecStartIndexPerMatCut),  sizeof( int ) * numHepEmMCCData ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fResMacXSecData),  sizeof( double ) * numResMacXSec ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fResMacXSecStartIndexPerMatCut, onHOST->fResMacXSecStartIndexPerMatCut, sizeof( int ) * numHepEmMCCData, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fResMacXSecData, onHOST->fResMacXSecData, sizeof( double ) * numResMacXSec, cudaMemcpyHostToDevice ) );
+
+  const int numElemSelectorIoni = onHOST->fElemSelectorIoniNumData;
+  elDataHTo_d->fElemSelectorIoniNumData = numElemSelectorIoni;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut),  sizeof( int ) * numHepEmMCCData ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorIoniData),  sizeof( double ) * numElemSelectorIoni ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorIoniStartIndexPerMatCut, onHOST->fElemSelectorIoniStartIndexPerMatCut, sizeof( int ) * numHepEmMCCData, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorIoniData, onHOST->fElemSelectorIoniData, sizeof( double ) * numElemSelectorIoni, cudaMemcpyHostToDevice ) );
+
+  const int numElemSelectorBremSB = onHOST->fElemSelectorBremSBNumData;
+  elDataHTo_d->fElemSelectorBremSBNumData = numElemSelectorBremSB;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut),  sizeof( int ) * numHepEmMCCData ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremSBData),  sizeof( double ) * numElemSelectorBremSB ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorBremSBStartIndexPerMatCut, onHOST->fElemSelectorBremSBStartIndexPerMatCut, sizeof( int ) * numHepEmMCCData, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorBremSBData, onHOST->fElemSelectorBremSBData, sizeof( double ) * numElemSelectorBremSB, cudaMemcpyHostToDevice ) );
+
+  const int numElemSelectorBremRB = onHOST->fElemSelectorBremRBNumData;
+  elDataHTo_d->fElemSelectorBremRBNumData = numElemSelectorBremRB;
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut),  sizeof( int ) * numHepEmMCCData ) );
+  gpuErrchk ( cudaMalloc ( &(elDataHTo_d->fElemSelectorBremRBData),  sizeof( double ) * numElemSelectorBremRB ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorBremRBStartIndexPerMatCut, onHOST->fElemSelectorBremRBStartIndexPerMatCut, sizeof( int ) * numHepEmMCCData, cudaMemcpyHostToDevice ) );
+  gpuErrchk ( cudaMemcpy ( elDataHTo_d->fElemSelectorBremRBData, onHOST->fElemSelectorBremRBData, sizeof( double ) * numElemSelectorBremRB, cudaMemcpyHostToDevice ) );
+
+  //
+  // then finaly copy the top level, i.e. the main struct with the already 
+  // appropriate pointers to device side memory locations but stored on the host
+  gpuErrchk ( cudaMalloc (  onDEVICE,              sizeof(  struct G4HepEmElectronData ) ) );
+  gpuErrchk ( cudaMemcpy ( *onDEVICE, elDataHTo_d, sizeof(  struct G4HepEmElectronData ), cudaMemcpyHostToDevice ) );
+  // and clean 
+  delete elDataHTo_d;
+}
 
 void FreeElectronDataOnDevice(struct G4HepEmElectronDataOnDevice** onDEVICE) {
   if (*onDEVICE) {
@@ -369,5 +428,32 @@ void FreeElectronDataOnDevice(struct G4HepEmElectronDataOnDevice** onDEVICE) {
   }
 }
 
+void FreeElectronDataOnDeviceHL(struct G4HepEmElectronData** onDEVICE) {
+  if (*onDEVICE) {
+    // copy the on-device data bakc to host in order to be able to free the device
+    // side dynamically allocated memories
+    struct G4HepEmElectronData* onHostTo_d = new G4HepEmElectronData;
+    gpuErrchk ( cudaMemcpy( onHostTo_d, onDEVICE, sizeof( struct G4HepEmElectronData ), cudaMemcpyDeviceToHost ) );
+    // ELoss data
+    cudaFree( onHostTo_d->fELossEnergyGrid );
+    cudaFree( onHostTo_d->fELossData       );
+    // Macr. cross sections for ioni/brem
+    cudaFree( onHostTo_d->fResMacXSecStartIndexPerMatCut );
+    cudaFree( onHostTo_d->fResMacXSecData                );
 
+    // Target element selectors for ioni and brem models
+    cudaFree( onHostTo_d->fElemSelectorIoniStartIndexPerMatCut   );
+    cudaFree( onHostTo_d->fElemSelectorIoniData                  );
+    cudaFree( onHostTo_d->fElemSelectorBremSBStartIndexPerMatCut );
+    cudaFree( onHostTo_d->fElemSelectorBremSBData                );
+    cudaFree( onHostTo_d->fElemSelectorBremRBStartIndexPerMatCut );
+    cudaFree( onHostTo_d->fElemSelectorBremRBData                );
+
+    // free the remaining device side electron data and set the host side ptr to null
+    cudaFree( *onDEVICE );
+    *onDEVICE = nullptr;
+
+    delete onHostTo_d;
+  }
+}
 

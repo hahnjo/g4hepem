@@ -29,9 +29,11 @@ void CopyG4HepEmDataToGPU (struct G4HepEmData* onCPU) {
 
   // 4. Copy electron data to the GPU
   CopyElectronDataToDevice( onCPU->fTheElectronData, &(onCPU->fTheElectronData_gpu));
+  CopyElectronDataToDeviceHL( onCPU->fTheElectronData, &(onCPU->fTheElectronData_gpu_hl));
 
 
   // 5. Copy positron data to the GPU
   CopyElectronDataToDevice( onCPU->fThePositronData, &(onCPU->fThePositronData_gpu));
+  CopyElectronDataToDeviceHL( onCPU->fThePositronData, &(onCPU->fThePositronData_gpu_hl));
 
 }

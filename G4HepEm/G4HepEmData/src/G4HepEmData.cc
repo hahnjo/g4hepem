@@ -26,6 +26,9 @@ void InitG4HepEmData (struct G4HepEmData* theHepEmData) {
   theHepEmData->fTheMaterialData_gpu = nullptr;
   theHepEmData->fTheElementData_gpu  = nullptr;
 
+  theHepEmData->fTheElectronData_gpu_hl = nullptr;  
+  theHepEmData->fThePositronData_gpu_hl = nullptr;
+
   theHepEmData->fTheElectronData_gpu = nullptr;
   theHepEmData->fThePositronData_gpu = nullptr;
 #endif // G4HepEm_CUDA_BUILD
@@ -48,6 +51,9 @@ void FreeG4HepEmData (struct G4HepEmData* theHepEmData) {
   FreeMatCutDataOnGPU      ( &(theHepEmData->fTheMatCutData_gpu)   );
   FreeMaterialDataOnGPU    ( &(theHepEmData->fTheMaterialData_gpu) );
   FreeElementDataOnGPU     ( &(theHepEmData->fTheElementData_gpu)  );
+
+  FreeElectronDataOnDeviceHL ( &(theHepEmData->fTheElectronData_gpu_hl) );
+  FreeElectronDataOnDeviceHL ( &(theHepEmData->fThePositronData_gpu_hl) );
 
   FreeElectronDataOnDevice ( &(theHepEmData->fTheElectronData_gpu) );
   FreeElectronDataOnDevice ( &(theHepEmData->fThePositronData_gpu) );
