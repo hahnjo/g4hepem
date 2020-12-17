@@ -143,7 +143,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
     eloss     = theEkin; 
     finalEkin = 0.0;
     // call annihilation for e+ !!!
-    eloss = std::max(eloss, 0.0);
+    eloss = G4HepEmMax(eloss, 0.0);
     theTrack->SetEKin(finalEkin);
     theTrack->SetEnergyDeposit(eloss);
     if (!isElectron) {
@@ -151,7 +151,7 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
     }
     return;
   }
-  eloss = std::max(eloss, 0.0);
+  eloss = G4HepEmMax(eloss, 0.0);
   theTrack->SetEKin(finalEkin);
   theTrack->SetEnergyDeposit(eloss);
   //
@@ -196,10 +196,10 @@ void G4HepEmElectronManager::Perform(struct G4HepEmData* hepEmData, struct G4Hep
 
 double  G4HepEmElectronManager::GetRestRange(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin) {
   const int numELossData = elData->fELossEnergyGridSize;
-  const int iRangeStarts = 5*numELossData*imc; 
+  const int iRangeStarts = 5*numELossData*imc;
   // use the G4HepEmRunUtils function for interpolation
   const double     range = GetSplineLog(numELossData, elData->fELossEnergyGrid, &(elData->fELossData[iRangeStarts]), ekin, lekin, elData->fELossLogMinEkin, elData->fELossEILDelta);
-  return std::max(0.0, range);
+  return G4HepEmMax(0.0, range);
 }
 
 
@@ -208,7 +208,7 @@ double  G4HepEmElectronManager::GetRestDEDX(const struct G4HepEmElectronData* el
   const int  iDEDXStarts = numELossData*(5*imc + 2); // 5*imc*numELossData is where range-start + 2*numELossData
   // use the G4HepEmRunUtils function for interpolation
   const double      dedx = GetSplineLog(numELossData, elData->fELossEnergyGrid, &(elData->fELossData[iDEDXStarts]), ekin, lekin, elData->fELossLogMinEkin, elData->fELossEILDelta);
-  return std::max(0.0, dedx);
+  return G4HepEmMax(0.0, dedx);
 }
 
 
@@ -219,14 +219,14 @@ double  G4HepEmElectronManager::GetInvRange(const struct G4HepEmElectronData* el
   const double minRange = elData->fELossData[iRangeStarts];
   if (range<minRange) {
     const double dum = range/minRange;
-    return std::max(0.0, elData->fELossEnergyGrid[0]*dum*dum);
+    return G4HepEmMax(0.0, elData->fELossEnergyGrid[0]*dum*dum);
   }
   // use the G4HepEmRunUtils function for finding the range bin index and for interpolation
   // find `i`, lower index of the range such that R_{i} <= r < R_{i+1}
   const int     iRlow = FindLowerBinIndex(&(elData->fELossData[iRangeStarts]), numELossData, range, 2);
   // interpolate: x,y and sd
   const double energy = GetSpline(&(elData->fELossData[iRangeStarts]), elData->fELossEnergyGrid, &(elData->fELossData[iRangeStarts+4*numELossData]), range, iRlow, 2); 
-  return std::max(0.0, energy);
+  return G4HepEmMax(0.0, energy);
 }
 
 
@@ -239,7 +239,7 @@ double  G4HepEmElectronManager::GetRestMacXSec(const struct G4HepEmElectronData*
   if (ekin<minEKin) {return 0.0; }  
   // use the G4HepEmRunUtils function for interpolation
   const double    mxsec = GetSplineLog(numData, &(elData->fResMacXSecData[iStart+5]), ekin, lekin, elData->fResMacXSecData[iStart+3],elData->fResMacXSecData[iStart+4]);   
-  return std::max(0.0, mxsec);
+  return G4HepEmMax(0.0, mxsec);
 }
 
 
@@ -257,7 +257,7 @@ double  G4HepEmElectronManager::GetRestMacXSecForStepping(const struct G4HepEmEl
     // compute reduced energy: we assume that 1/lambda is higher at lower energy so we provide an overestimate
     const double ekinReduced = 0.8 * ekin;
     if (ekinReduced < mxsecMaxE) {
-      return std::max(0.0, mxsecMaxV);
+      return G4HepEmMax(0.0, mxsecMaxV);
     } else {
       // otherwise we are still on the right side of the maximum so provide 1/lambda at this reduced energy
       ekin   = ekinReduced;
@@ -267,7 +267,7 @@ double  G4HepEmElectronManager::GetRestMacXSecForStepping(const struct G4HepEmEl
   if (ekin<mxsecMinE) {return 0.0; }  
   // use the G4HepEmRunUtils function for interpolation
   const double mxsec = GetSplineLog(numData, &(elData->fResMacXSecData[iStart+5]), ekin, lekin, elData->fResMacXSecData[iStart+3], elData->fResMacXSecData[iStart+4]);   
-  return std::max(0.0, mxsec);  
+  return G4HepEmMax(0.0, mxsec);  
 }
 
 double G4HepEmElectronManager::ComputeMacXsecAnnihilation(const double ekin, const double electronDensity) {

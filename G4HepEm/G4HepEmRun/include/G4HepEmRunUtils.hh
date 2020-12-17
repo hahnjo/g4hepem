@@ -2,6 +2,19 @@
 #ifndef G4HepEmRunUtils_HH
 #define G4HepEmRunUtils_HH
 
+#include "G4HepEmMacros.hh"
+
+template <typename T>
+G4HepEmHostDevice static inline
+T G4HepEmMax(T a, T b) {
+  return a > b ? a : b;
+}
+
+template <typename T>
+G4HepEmHostDevice static inline
+T G4HepEmMin(T a, T b) {
+  return a < b ? a : b;
+}
 
 // Roate the direction [u,v,w] given in the scattering frame to the lab frame.
 // Details: scattering is described relative to the [0,0,1] direction (i.e. scattering 
