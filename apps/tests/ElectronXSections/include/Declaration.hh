@@ -40,7 +40,7 @@ bool TestXSectionData ( const struct G4HepEmData* hepEmData, bool iselectron=tru
                                     double* tsInEkinIoni_h, double* tsInLogEkinIoni_h,
                                     double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
                                     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, 
-                                    int numTestCases, bool iselectron );
+                                    int numTestCases, bool iselectron, bool hostLayout );
 
 #endif // G4HepEm_CUDA_BUILD 
 

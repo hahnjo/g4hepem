@@ -111,6 +111,7 @@ private:
 
   double  GetRestMacXSecBrem(struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin);
   */
+  G4HepEmHostDevice
   double  GetRestMacXSec(const struct G4HepEmElectronData* elData, const int imc, const double ekin, const double lekin, bool isioni);
 
   double  GetRestMacXSecForStepping(const struct G4HepEmElectronData* elData, const int imc, double ekin, double lekin, bool isioni);

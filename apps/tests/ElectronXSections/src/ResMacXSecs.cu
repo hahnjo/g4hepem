@@ -4,10 +4,16 @@
 #include "G4HepEmData.hh"
 #include "G4HepEmElectronData.hh"
 
+// don't worry it's just for testing
+#define private public
+#include "G4HepEmElectronManager.hh"
+
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
-
+// Pull in implementation
+#include "G4HepEmElectronManager.icc"
+#include "G4HepEmRunUtils.icc"
 
 // Kernel to evaluate the Restricted macroscopic cross section values for the 
 // test cases. The required data are stored in the ResMacXSec data part of the 
@@ -55,10 +61,20 @@ void TestResMacXSecDataKernel ( const struct G4HepEmElectronDataOnDevice* theEle
   }
 }  
 
+template <bool TIsIoni>
+__global__
+void TestResMacXSec ( const struct G4HepEmElectronData* theElectronData_d, 
+     int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d, double* tsOutRes_d, 
+     int numTestCases) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+    G4HepEmElectronManager theElectronMgr;
+    tsOutRes_d[i] = theElectronMgr.GetRestMacXSec (theElectronData_d, tsInImc_d[i], tsInEkin_d[i], tsInLogEkin_d[i], TIsIoni);
+  }
+}
 
 void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h, 
      double* tsInEkinIoni_h, double* tsInLogEkinIoni_h, double* tsInEkinBrem_h, double* tsInLogEkinBrem_h,
-     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, int numTestCases, bool iselectron ) {
+     double* tsOutResMXIoni_h, double* tsOutResMXBrem_h, int numTestCases, bool iselectron, bool hostLayout ) {
   //                                   
   // --- Allocate device side memory for the input/output data and copy all input
   //     data from host to device
@@ -89,9 +105,15 @@ void TestResMacXSecDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsIn
   int numThreads = 512;
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
   //  std::cout << " N = " << numTestCases << " numBlocks = " << numBlocks << " numThreads = " << numThreads << " x = " << numBlocks*numThreads << std::endl;
-  const G4HepEmElectronDataOnDevice* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
-  TestResMacXSecDataKernel <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinIoni_d, tsInLogEkinIoni_d, tsOutResMXIoni_d, numTestCases );
-  TestResMacXSecDataKernel < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinBrem_d, tsInLogEkinBrem_d, tsOutResMXBrem_d, numTestCases );
+  if (hostLayout) {
+    const G4HepEmElectronData* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu_hl : hepEmData->fThePositronData_gpu_hl;
+    TestResMacXSec <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinIoni_d, tsInLogEkinIoni_d, tsOutResMXIoni_d, numTestCases );
+    TestResMacXSec < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinBrem_d, tsInLogEkinBrem_d, tsOutResMXBrem_d, numTestCases );
+  } else {
+    const G4HepEmElectronDataOnDevice* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
+    TestResMacXSecDataKernel <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinIoni_d, tsInLogEkinIoni_d, tsOutResMXIoni_d, numTestCases );
+    TestResMacXSecDataKernel < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkinBrem_d, tsInLogEkinBrem_d, tsOutResMXBrem_d, numTestCases );
+  }
   //  
   // --- Synchronize to make sure that completed on the device
   cudaDeviceSynchronize();
