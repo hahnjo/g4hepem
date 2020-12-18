@@ -38,7 +38,7 @@ bool TestElemSelectorData ( const struct G4HepEmData* hepEmData, const struct G4
   // test cases.
   void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h, 
                                       double* tsInEkin_h, double* tsInLogEkin_h, double* tsInRngVals_h,
-                                      int* tsOutRes_h, int numTestCases, int indxModel, bool iselectron );
+                                      int* tsOutRes_h, int numTestCases, int indxModel, bool iselectron, bool hostLayout );
 
 #endif // G4HepEm_CUDA_BUILD 
 

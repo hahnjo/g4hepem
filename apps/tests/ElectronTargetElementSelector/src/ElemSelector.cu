@@ -7,6 +7,8 @@
 #include <cuda_runtime.h>
 #include "G4HepEmCuUtils.hh"
 
+// Pull in implementation
+#include "G4HepEmElectronInteractionBrem.icc"
 
 //
 // Note: both specialisations (needed to be called from the host) are done in 
@@ -65,10 +67,30 @@ void TestElemSelectorDataBremKernel ( const struct G4HepEmElectronDataOnDevice* 
   }
 }  
 
+template <bool TisSBModel>
+__global__
+void TestElemSelector ( const struct G4HepEmElectronData* theElectronData_d,
+     const struct G4HepEmMatCutData* theMatCutData_d, const struct G4HepEmMaterialData* theMaterialData_d,
+     int* tsInImc_d, double* tsInEkin_d, double* tsInLogEkin_d, double* tsInRngVals_d, 
+     int* tsOutRes_d, int numTestCases ) {
+  for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < numTestCases; i += blockDim.x * gridDim.x) {
+    // get number of elements this material (from the currecnt material-cuts)
+    // is composed of
+    const int imc = tsInImc_d[i];
+    const int indxMaterial = theMatCutData_d->fMatCutData[imc].fHepEmMatIndex;
+    const struct G4HepEmMatData& theMatData = theMaterialData_d->fMaterialData[indxMaterial];
+    const int numOfElement = theMatData.fNumOfElement;
+    int targetElemIndx = 0;
+    if (numOfElement > 1) {
+      targetElemIndx = SelectTargetAtomBrem( theElectronData_d, imc, tsInEkin_d[i], tsInLogEkin_d[i], tsInRngVals_d[i], TisSBModel);
+    }
+    tsOutRes_d[i] = targetElemIndx;
+  }
+}
 
 void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* tsInImc_h, 
      double* tsInEkin_h, double* tsInLogEkin_h, double* tsInRngVals_h, 
-     int* tsOutRes_h, int numTestCases, int indxModel, bool iselectron ) {
+     int* tsOutRes_h, int numTestCases, int indxModel, bool iselectron, bool hostLayout ) {
   //                                   
   // --- Allocate device side memory for the input/output data and copy all input
   //     data from host to device
@@ -91,21 +113,40 @@ void TestElemSelectorDataOnDevice ( const struct G4HepEmData* hepEmData, int* ts
   gpuErrchk ( cudaMemcpy ( tsInRngVals_d, tsInRngVals_h, sizeof( double ) * numTestCases, cudaMemcpyHostToDevice) );
   //
   // --- Launch the kernels
-  const struct G4HepEmElectronDataOnDevice* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
   int numThreads = 512;
   int numBlocks  = std::ceil( float(numTestCases)/numThreads );
-  switch (indxModel) {
-    case 0: // not used
-      break;
-    
-    case 1:
+  if (hostLayout) {
+    const struct G4HepEmElectronData* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu_hl : hepEmData->fThePositronData_gpu_hl;
+    const struct G4HepEmMatCutData* theMatCutData = hepEmData->fTheMatCutData_gpu;
+    const struct G4HepEmMaterialData* theMaterialData = hepEmData->fTheMaterialData_gpu;
+    switch (indxModel) {
+      case 0: // not used
+        break;
       
-      TestElemSelectorDataBremKernel <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
-      break;
+      case 1:
+        
+        TestElemSelector <  true > <<< numBlocks, numThreads >>> (theElectronData, theMatCutData, theMaterialData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
+        break;
+        
+      case 2:  
+        TestElemSelector < false > <<< numBlocks, numThreads >>> (theElectronData, theMatCutData, theMaterialData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
+        break;
+    }
+  } else {
+    const struct G4HepEmElectronDataOnDevice* theElectronData = iselectron ? hepEmData->fTheElectronData_gpu : hepEmData->fThePositronData_gpu;
+    switch (indxModel) {
+      case 0: // not used
+        break;
       
-    case 2:  
-      TestElemSelectorDataBremKernel < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
-      break;
+      case 1:
+        
+        TestElemSelectorDataBremKernel <  true > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
+        break;
+        
+      case 2:  
+        TestElemSelectorDataBremKernel < false > <<< numBlocks, numThreads >>> (theElectronData, tsInImc_d, tsInEkin_d, tsInLogEkin_d, tsInRngVals_d, tsOutRes_d, numTestCases );
+        break;
+    }
   }
   //  
   // --- Synchronize to make sure that completed on the device

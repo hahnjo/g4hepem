@@ -215,16 +215,24 @@ bool TestElemSelectorData ( const struct G4HepEmData* hepEmData, const struct G4
     //
     // Perform the test case evaluations on the device
     int* tsOutResOnDevice = new int[numTestCases]; 
-    TestElemSelectorDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsInRngVals, tsOutResOnDevice, numTestCases, iModel, iselectron);
+    int* tsOutResOnDeviceHL = new int[numTestCases];
+    TestElemSelectorDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsInRngVals, tsOutResOnDevice, numTestCases, iModel, iselectron, false);
+    TestElemSelectorDataOnDevice (hepEmData, tsInImc, tsInEkin, tsInLogEkin, tsInRngVals, tsOutResOnDeviceHL, numTestCases, iModel, iselectron, true);
     for (int i=0; i<numTestCases; ++i) { 
       if ( tsOutResElemIndx[i] != tsOutResOnDevice[i] ) {
         isPassed = false;
         std::cerr << "\n*** ERROR:\nTarget Element Selector data: G4HepEm Host v.s DEVICE G4HepEm Host vs Device (Ioni) mismatch: " << tsOutResElemIndx[i] << " != " << tsOutResOnDevice[i] << " at  iModel = " << iModel << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << " . " << std::endl; 
         break;
       }
+      if ( tsOutResElemIndx[i] != tsOutResOnDeviceHL[i] ) {
+        isPassed = false;
+        std::cerr << "\n*** ERROR:\nTarget Element Selector data: G4HepEm Host v.s DEVICE (HL) G4HepEm Host vs Device (Ioni) mismatch: " << tsOutResElemIndx[i] << " != " << tsOutResOnDeviceHL[i] << " at  iModel = " << iModel << " imc  = " << tsInImc[i] << " ekin =  " << tsInEkin[i] << " . " << std::endl; 
+        break;
+      }
     }
     // 
     delete [] tsOutResOnDevice;
+    delete [] tsOutResOnDeviceHL;
 #endif // G4HepEm_CUDA_BUILD  
 
   } // end for-3 i.e. over the models

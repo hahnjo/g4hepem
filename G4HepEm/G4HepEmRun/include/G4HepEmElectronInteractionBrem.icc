@@ -214,7 +214,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
                        : 0;
   const int     iZet = theMData.fElementVect[elemIndx];
   const double  dZet = (double)iZet;
-  const G4HepEmElemData& theElemData = hepEmData->fTheElementData->fElementData[std::min(iZet, hepEmData->fTheElementData->fMaxZet)];
+  const G4HepEmElemData& theElemData = hepEmData->fTheElementData->fElementData[G4HepEmMin(iZet, hepEmData->fTheElementData->fMaxZet)];
   //
   // == Sampling of the emitted photon energy
   //
@@ -240,7 +240,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
   double eGamma, funcVal;
   do {
     tlData->GetRNGEngine()->flatArray(2, rndm);
-    eGamma = std::sqrt( std::max( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
+    eGamma = std::sqrt( G4HepEmMax( std::exp( xmin + rndm[0] * xrange ) - densityCorr, 0.0 ) );
     // evaluate the DCS at this emitted gamma energy
     const double y     = eGamma / thePrimTotalE;
     const double onemy = 1.-y;
@@ -274,7 +274,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
         funcVal = dum1*((0.25*phi1-Fz) + (0.25*psi1-2.*logZ/3.)*invZ) +  0.125*onemy*(phi2 + psi2*invZ);
       }                  
     }
-    funcVal = std::max( 0.0, funcVal);
+    funcVal = G4HepEmMax( 0.0, funcVal);
   } while ( funcVal < rejFuncMax * rndm[1] );
   // end of rejection loop: the photon energy is `eGamma`
   // 
@@ -335,9 +335,9 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
   const double    invLD = theData[3];
   const double*   xdata = &(theData[4]);
   // make sure that $x \in  [x[0],x[ndata-1]]$
-  const double   xv = std::max(xdata[0], std::min(xdata[numElem*(numData-1)], ekin));
+  const double   xv = G4HepEmMax(xdata[0], G4HepEmMin(xdata[numElem*(numData-1)], ekin));
   // compute the lowerindex of the x bin (idx \in [0,N-2] will be guaranted)
-  const int idxEkin = std::max(0.0, std::min((lekin-logE0)*invLD, numData-2.0)); 
+  const int idxEkin = G4HepEmMax(0.0, G4HepEmMin((lekin-logE0)*invLD, numData-2.0)); 
   // the real index position is idxEkin x numElem
   int   indx0 = idxEkin*numElem;
   int   indx1 = indx0+numElem;
@@ -345,7 +345,7 @@ int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc
   const double   x1 = xdata[indx0++];
   const double   x2 = xdata[indx1++];
   const double   dl = x2-x1;
-  const double    b = std::max(0., std::min(1., (xv - x1)/dl));
+  const double    b = G4HepEmMax(0., G4HepEmMin(1., (xv - x1)/dl));
   int theElemIndex = 0;
   while (theElemIndex<numElem-1 && urndn > xdata[indx0+theElemIndex]+b*(xdata[indx1+theElemIndex]-xdata[indx0+theElemIndex])) { ++theElemIndex; }
   return theElemIndex;      

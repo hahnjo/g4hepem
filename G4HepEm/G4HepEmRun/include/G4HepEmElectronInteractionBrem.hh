@@ -2,6 +2,8 @@
 #ifndef G4HepEmElectronInteractionBrem_HH
 #define G4HepEmElectronInteractionBrem_HH
 
+#include "G4HepEmMacros.hh"
+
 class  G4HepEmTLData;
 struct G4HepEmData;
 struct G4HepEmElectronData;
@@ -26,6 +28,7 @@ void PerformElectronBremRB(G4HepEmTLData* tlData, struct G4HepEmData* hepEmData)
 
 // Target atom selector for the above bremsstrahlung intercations in case of 
 // materials composed from multiple elements.
+G4HepEmHostDevice
 int SelectTargetAtomBrem(const struct G4HepEmElectronData* elData, const int imc, const double ekin, 
                          const double lekin, const double urndn, const bool isbremSB);
 
